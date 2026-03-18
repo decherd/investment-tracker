@@ -1,0 +1,1078 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <title>Investment Tracker</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #f0f4f8;
+      color: #1a1a2e;
+      min-height: 100vh;
+      padding: 20px 16px 40px;
+    }
+
+    /* ── Header ── */
+    header {
+      text-align: center;
+      margin-bottom: 28px;
+    }
+    header h1 { font-size: 1.3rem; color: #666; margin-bottom: 10px; }
+    .total-value {
+      font-size: 3.2rem;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+      letter-spacing: -1px;
+    }
+    .total-meta {
+      display: flex;
+      justify-content: center;
+      gap: 28px;
+      margin-top: 10px;
+      font-size: 0.9rem;
+      color: #666;
+    }
+    .total-meta strong { color: #333; }
+
+    /* ── Cards ── */
+    .cards {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 14px;
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+    @media (max-width: 860px) {
+      .cards { grid-template-columns: 1fr 1fr; }
+    }
+    @media (max-width: 560px) {
+      .cards { grid-template-columns: 1fr; }
+    }
+
+    .card {
+      background: #ffffff;
+      border-radius: 22px;
+      padding: 22px 20px 18px;
+      border: 1px solid #dde3ea;
+      box-shadow: 0 2px 12px rgba(0,0,0,.06);
+    }
+    .card-vmfxx { border-top: 3px solid #0ea5e9; }
+    .card-voo   { border-top: 3px solid #8b5cf6; }
+    .card-tjs   { border-top: 3px solid #f59e0b; }
+    .tjs-color  { color: #d97706; }
+    .badge-tjs  { background: #fef3c7; color: #d97706; }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 14px;
+    }
+    .card-title    { font-size: 0.78rem; color: #999; text-transform: uppercase; letter-spacing: .1em; }
+    .card-subtitle { font-size: 1rem; font-weight: 700; margin-top: 2px; }
+    .vmfxx-color   { color: #0284c7; }
+    .voo-color     { color: #7c3aed; }
+
+    .card-badge {
+      font-size: 0.72rem;
+      padding: 4px 9px;
+      border-radius: 20px;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+    .badge-safe   { background: #e0f2fe; color: #0284c7; }
+    .badge-market { background: #ede9fe; color: #7c3aed; }
+
+    .current-value {
+      font-size: 2.6rem;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+      letter-spacing: -1px;
+      line-height: 1;
+      margin-bottom: 5px;
+    }
+    .current-value.clock {
+      font-size: 1.9rem;
+    }
+    .sub-line {
+      font-size: 0.85rem;
+      color: #999;
+      margin-bottom: 16px;
+      min-height: 18px;
+    }
+
+    .stats {
+      background: #f8fafc;
+      border-radius: 14px;
+      padding: 12px 14px;
+      margin-bottom: 14px;
+      border: 1px solid #e8edf2;
+    }
+    .stat-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 5px 0;
+      font-size: 0.88rem;
+    }
+    .stat-label { color: #888; }
+    .stat-value { font-weight: 600; font-variant-numeric: tabular-nums; }
+    .divider    { border: none; border-top: 1px solid #e8edf2; margin: 4px 0; }
+
+    .gain { color: #16a34a; }
+    .loss { color: #dc2626; }
+
+    .buttons {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+    button {
+      padding: 13px 8px;
+      border: none;
+      border-radius: 13px;
+      font-size: 0.92rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: opacity .15s, transform .1s;
+    }
+    button:hover  { opacity: .85; }
+    button:active { opacity: .7; transform: scale(.98); }
+    .btn-add  { background: #dcfce7; color: #15803d; }
+    .btn-sell { background: #fee2e2; color: #b91c1c; }
+    button:disabled { opacity: .35; cursor: not-allowed; }
+
+    .yield-note {
+      font-size: 0.73rem;
+      color: #aaa;
+      text-align: center;
+      margin-top: 10px;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 10px 0 14px;
+      color: #aaa;
+      font-size: 0.85rem;
+    }
+
+    /* ── Modal ── */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.4);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-overlay.open { display: flex; }
+
+    .modal {
+      background: #ffffff;
+      border-radius: 22px;
+      padding: 28px 24px 22px;
+      width: 92%;
+      max-width: 360px;
+      border: 1px solid #dde3ea;
+      box-shadow: 0 8px 32px rgba(0,0,0,.12);
+    }
+    .modal h2 { font-size: 1.25rem; margin-bottom: 6px; color: #1a1a2e; }
+    .modal p  { color: #888; font-size: 0.88rem; margin-bottom: 14px; }
+
+    .modal-hint {
+      font-size: 0.85rem;
+      color: #555;
+      background: #f8fafc;
+      border: 1px solid #e8edf2;
+      padding: 10px 13px;
+      border-radius: 11px;
+      margin-bottom: 14px;
+      display: none;
+    }
+
+    .input-wrap {
+      position: relative;
+      margin-bottom: 10px;
+    }
+    .input-wrap span {
+      position: absolute;
+      left: 14px; top: 50%;
+      transform: translateY(-50%);
+      color: #999; font-size: 1.1rem; font-weight: 600;
+    }
+    .input-wrap input {
+      width: 100%;
+      padding: 14px 14px 14px 30px;
+      background: #f8fafc;
+      border: 1px solid #dde3ea;
+      border-radius: 13px;
+      color: #1a1a2e;
+      font-size: 1.35rem;
+      font-weight: 700;
+      outline: none;
+      font-variant-numeric: tabular-nums;
+    }
+    .input-wrap input:focus { border-color: #0ea5e9; }
+
+    .error-msg {
+      color: #dc2626;
+      font-size: 0.82rem;
+      min-height: 18px;
+      margin-bottom: 12px;
+    }
+    .modal-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .btn-confirm-add  { background: #dcfce7; color: #15803d; }
+    .btn-confirm-sell { background: #fee2e2; color: #b91c1c; }
+    .btn-cancel { background: #f1f5f9; color: #666; }
+
+    /* ── User screen ── */
+    #userScreen {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: #f0f4f8;
+      z-index: 200;
+      align-items: center;
+      justify-content: center;
+    }
+    #userScreen.open { display: flex; }
+    .user-screen-box {
+      background: #fff;
+      border-radius: 24px;
+      padding: 36px 32px 28px;
+      width: 92%;
+      max-width: 380px;
+      border: 1px solid #dde3ea;
+      box-shadow: 0 4px 24px rgba(0,0,0,.08);
+      text-align: center;
+    }
+    .user-screen-box h2 { font-size: 1.5rem; margin-bottom: 6px; }
+    .user-screen-box p  { color: #888; font-size: 0.9rem; margin-bottom: 24px; }
+    .user-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
+    .user-btn {
+      padding: 14px;
+      border: 2px solid #e8edf2;
+      border-radius: 14px;
+      background: #f8fafc;
+      font-size: 1.1rem;
+      font-weight: 700;
+      cursor: pointer;
+      color: #1a1a2e;
+      transition: border-color .15s, background .15s;
+    }
+    .user-btn:hover { border-color: #0ea5e9; background: #f0f9ff; }
+    .user-divider { color: #ccc; font-size: 0.8rem; margin: 4px 0 16px; }
+    .add-user-row { display: flex; gap: 8px; }
+    .add-user-row input {
+      flex: 1;
+      padding: 12px 14px;
+      border: 1px solid #dde3ea;
+      border-radius: 12px;
+      font-size: 1rem;
+      outline: none;
+      color: #1a1a2e;
+    }
+    .add-user-row input:focus { border-color: #0ea5e9; }
+    .add-user-row button {
+      padding: 12px 18px;
+      background: #0ea5e9;
+      color: #fff;
+      border: none;
+      border-radius: 12px;
+      font-size: 0.95rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    /* ── Header switcher ── */
+    .header-user-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+    .switch-user-btn {
+      background: none;
+      border: 1px solid #dde3ea;
+      color: #888;
+      font-size: 0.75rem;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-weight: 500;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── User selector screen ── -->
+<div id="userScreen">
+  <div class="user-screen-box">
+    <h2>📈 Investment Tracker</h2>
+    <p>Who's investing today?</p>
+    <div class="user-list" id="userList"></div>
+    <div class="user-divider" id="userDivider" style="display:none">— or add a new investor —</div>
+    <div class="add-user-row">
+      <input type="text" id="newUserInput" placeholder="Enter name…" maxlength="30">
+      <button onclick="addUserFromInput()">Add</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Header ── -->
+<header>
+  <div class="header-user-row">
+    <h1 id="pageTitle">📈 Investment Tracker</h1>
+    <button class="switch-user-btn" onclick="showUserScreen()">Switch User</button>
+  </div>
+  <div style="display:flex; justify-content:center; margin-bottom:10px;">
+    <button onclick="openReset()" style="background:none; border:1px solid #dde3ea; color:#bbb; font-size:0.72rem; padding:4px 12px; border-radius:20px; font-weight:500; cursor:pointer;">Reset My Data</button>
+  </div>
+  <div class="total-value" id="totalValue">$0.00</div>
+  <div class="total-meta">
+    <span>Invested: <strong id="totalInvested">$0.00</strong></span>
+    <span>Returns: <strong id="totalReturns" class="gain">+$0.00</strong></span>
+  </div>
+</header>
+
+<!-- ── Cards ── -->
+<div class="cards">
+
+  <!-- VMFXX -->
+  <div class="card card-vmfxx">
+    <div class="card-header">
+      <div>
+        <div class="card-title">Money Market</div>
+        <div class="card-subtitle vmfxx-color">VMFXX</div>
+      </div>
+      <span class="card-badge badge-safe">Always Grows ✓</span>
+    </div>
+
+    <div class="current-value clock" id="vmfxxValue">$0.00</div>
+    <div class="sub-line" id="vmfxxPerSec"></div>
+
+    <div class="stats">
+      <div class="stat-row">
+        <span class="stat-label">Invested</span>
+        <span class="stat-value" id="vmfxxInvested">$0.00</span>
+      </div>
+      <hr class="divider">
+      <div class="stat-row">
+        <span class="stat-label">Returns</span>
+        <span class="stat-value gain" id="vmfxxReturns">+$0.00</span>
+      </div>
+    </div>
+
+    <div class="empty-state" id="vmfxxEmpty">Add money to get started!</div>
+
+    <div class="buttons">
+      <button class="btn-add"  onclick="openModal('addVmfxx')">+ Add Money</button>
+      <button class="btn-sell" onclick="openModal('withdrawVmfxx')" id="btnWithdraw" disabled>− Withdraw</button>
+    </div>
+    <div class="yield-note" id="yieldNote">Loading yield…</div>
+  </div>
+
+  <!-- VOO -->
+  <div class="card card-voo">
+    <div class="card-header">
+      <div>
+        <div class="card-title">S&amp;P 500 ETF</div>
+        <div class="card-subtitle voo-color">VOO</div>
+      </div>
+      <span class="card-badge badge-market">Goes Up &amp; Down ⚡</span>
+    </div>
+
+    <div class="current-value" id="vooValue">$0.00</div>
+    <div class="sub-line" id="vooPriceChange">Loading price… <button onclick="manualRefreshVOO()" id="vooRefreshBtn" style="margin-left:6px; background:none; border:1px solid #dde3ea; color:#999; font-size:0.7rem; padding:2px 8px; border-radius:10px; font-weight:500; cursor:pointer;">↻ Refresh</button></div>
+
+    <div class="stats">
+      <div class="stat-row">
+        <span class="stat-label">Shares</span>
+        <span class="stat-value" id="vooShares">0.0000</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-label">Invested</span>
+        <span class="stat-value" id="vooInvested">$0.00</span>
+      </div>
+      <hr class="divider">
+      <div class="stat-row">
+        <span class="stat-label">Returns</span>
+        <span class="stat-value" id="vooReturns">$0.00</span>
+      </div>
+    </div>
+
+    <div class="empty-state" id="vooEmpty">Add money to buy shares!</div>
+
+    <div class="buttons">
+      <button class="btn-add"  onclick="openModal('buyVoo')" id="btnBuyVoo">+ Buy More</button>
+      <button class="btn-sell" onclick="openModal('sellVoo')" id="btnSellVoo" disabled>− Sell</button>
+    </div>
+    <div class="yield-note" id="vooPriceNote"></div>
+  </div>
+
+  <!-- TJS Cash -->
+  <div class="card card-tjs">
+    <div class="card-header">
+      <div>
+        <div class="card-title">Cash Holdings</div>
+        <div class="card-subtitle tjs-color">TJS → USD</div>
+      </div>
+      <span class="card-badge badge-tjs">Currency 💵</span>
+    </div>
+
+    <div class="current-value" id="tjsUsdValue">$0.00</div>
+    <div class="sub-line" id="tjsRateLine">Loading rate… <button onclick="manualRefreshTJS()" id="tjsRefreshBtn" style="margin-left:6px; background:none; border:1px solid #dde3ea; color:#999; font-size:0.7rem; padding:2px 8px; border-radius:10px; font-weight:500; cursor:pointer;">↻ Refresh</button></div>
+
+    <div class="stats">
+      <div class="stat-row">
+        <span class="stat-label">TJS Held</span>
+        <span class="stat-value" id="tjsAmount">0.00</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-label">Rate (1 USD)</span>
+        <span class="stat-value" id="tjsRate">—</span>
+      </div>
+      <hr class="divider">
+      <div class="stat-row">
+        <span class="stat-label">Today's Change</span>
+        <span class="stat-value" id="tjsDailyChange">$0.00</span>
+      </div>
+    </div>
+
+    <div class="empty-state" id="tjsEmpty">Add TJS cash to get started!</div>
+
+    <div class="buttons">
+      <button class="btn-add"  onclick="openModal('addTjs')">+ Add TJS</button>
+      <button class="btn-sell" onclick="openModal('removeTjs')" id="btnRemoveTjs" disabled>− Remove TJS</button>
+    </div>
+  </div>
+
+</div>
+
+<!-- ── Modal ── -->
+<div class="modal-overlay" id="modalOverlay" onclick="closeModalOnBg(event)">
+  <div class="modal">
+    <h2 id="modalTitle"></h2>
+    <p  id="modalDesc"></p>
+    <div class="modal-hint" id="modalHint"></div>
+    <!-- Price override row — always shown for VOO purchases -->
+    <div id="manualPriceRow" style="display:none; margin-bottom:10px;">
+      <div style="font-size:0.8rem; color:#888; margin-bottom:6px;">Share price (editable):</div>
+      <div class="input-wrap" style="margin-bottom:0">
+        <span>$</span>
+        <input type="number" id="manualPriceInput" placeholder="0.00" min="0.01" step="0.01">
+      </div>
+    </div>
+    <div style="font-size:0.8rem; color:#888; margin-bottom:6px;" id="amountLabel">Amount to invest:</div>
+    <div class="input-wrap">
+      <span>$</span>
+      <input type="number" id="modalInput" placeholder="0.00" min="0.01" step="0.01">
+    </div>
+    <div class="error-msg" id="modalError"></div>
+    <div class="modal-buttons">
+      <button id="modalConfirm" onclick="confirmModal()">Confirm</button>
+      <button class="btn-cancel" onclick="closeModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- Reset confirm modal -->
+<div class="modal-overlay" id="resetOverlay" onclick="if(event.target===this)closeReset()">
+  <div class="modal">
+    <h2>⚠️ Reset All Data?</h2>
+    <p>This will erase all investments for the current user and start from zero. This cannot be undone.</p>
+    <div class="modal-buttons">
+      <button class="btn-confirm-sell" onclick="confirmReset()">Yes, Reset</button>
+      <button class="btn-cancel" onclick="closeReset()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─── Constants ───────────────────────────────────────────────────────────────
+const SECONDS_PER_YEAR = 31_536_000;
+const FIVE_MIN  = 5  * 60 * 1000;
+const ONE_DAY   = 24 * 60 * 60 * 1000;
+const DEFAULT_YIELD = 0.0527;
+
+// ─── State ───────────────────────────────────────────────────────────────────
+let state = {
+  vmfxx: {
+    lots: [],            // [{ id, startBalance, startTime }]
+    yield: DEFAULT_YIELD,
+    yieldFetchedAt: 0
+  },
+  voo: {
+    lots: [],            // [{ id, shares, costPerShare, purchaseDate }]
+    price: null          // { regularMarketPrice, previousClose, timestamp }
+  },
+  tjs: {
+    amount: 0,           // TJS cash held
+    rate: null,          // { current, previous, date, timestamp }
+  }
+};
+
+let currentModal = null;
+let currentUser   = null;
+
+// ─── User Management ─────────────────────────────────────────────────────────
+const USERS_KEY       = 'investApp_users';
+const LAST_USER_KEY   = 'investApp_lastUser';
+const userDataKey = name => 'investApp_data_' + name;
+
+function getUsers()         { return JSON.parse(localStorage.getItem(USERS_KEY) || '[]'); }
+function saveUsers(users)   { localStorage.setItem(USERS_KEY, JSON.stringify(users)); }
+
+function defaultState() {
+  return {
+    vmfxx: { lots: [], yield: DEFAULT_YIELD, yieldFetchedAt: 0 },
+    voo:   { lots: [], price: null },
+    tjs:   { amount: 0, rate: null },
+  };
+}
+
+function switchUser(name) {
+  currentUser = name;
+  localStorage.setItem(LAST_USER_KEY, name);
+  state = defaultState();
+  loadState();
+  document.getElementById('pageTitle').textContent = `📈 ${name}'s Investments`;
+  hideUserScreen();
+  renderAll();
+  fetchVMFXXYield();
+  fetchVOOPrice();
+  fetchTJSRate();
+}
+
+function addUserFromInput() {
+  const input = document.getElementById('newUserInput');
+  const name  = input.value.trim();
+  if (!name) return;
+  const users = getUsers();
+  if (!users.includes(name)) { users.push(name); saveUsers(users); }
+  input.value = '';
+  switchUser(name);
+}
+
+function showUserScreen() {
+  const users   = getUsers();
+  const listEl  = document.getElementById('userList');
+  const divider = document.getElementById('userDivider');
+  listEl.innerHTML = '';
+  users.forEach(name => {
+    const btn = document.createElement('button');
+    btn.className   = 'user-btn';
+    btn.textContent = name;
+    btn.onclick     = () => switchUser(name);
+    listEl.appendChild(btn);
+  });
+  divider.style.display = users.length ? 'block' : 'none';
+  document.getElementById('userScreen').classList.add('open');
+  setTimeout(() => document.getElementById('newUserInput').focus(), 120);
+}
+
+function hideUserScreen() {
+  document.getElementById('userScreen').classList.remove('open');
+}
+
+// ─── Persistence ─────────────────────────────────────────────────────────────
+function save() {
+  if (!currentUser) return;
+  localStorage.setItem(userDataKey(currentUser), JSON.stringify(state));
+}
+
+function loadState() {
+  if (!currentUser) return;
+  const raw = localStorage.getItem(userDataKey(currentUser));
+  if (!raw) return;
+  try {
+    const saved = JSON.parse(raw);
+    state = Object.assign({}, defaultState(), saved);
+  } catch(e) { console.error('State parse error', e); }
+}
+
+// ─── VMFXX Math ──────────────────────────────────────────────────────────────
+function ratePerSecond(y) {
+  return Math.pow(1 + y, 1 / SECONDS_PER_YEAR) - 1;
+}
+
+function lotValue(lot) {
+  const secs = (Date.now() - lot.startTime) / 1000;
+  return lot.startBalance * Math.pow(1 + ratePerSecond(state.vmfxx.yield), secs);
+}
+
+function vmfxxTotal()    { return state.vmfxx.lots.reduce((s, l) => s + lotValue(l), 0); }
+function vmfxxInvested() { return state.vmfxx.lots.reduce((s, l) => s + l.startBalance, 0); }
+
+function addVmfxx(amount) {
+  state.vmfxx.lots.push({ id: Date.now(), startBalance: amount, startTime: Date.now() });
+  save();
+}
+
+function withdrawVmfxx(amount) {
+  let remaining = amount;
+  for (let i = state.vmfxx.lots.length - 1; i >= 0 && remaining > 0; i--) {
+    const lot = state.vmfxx.lots[i];
+    const val = lotValue(lot);
+    if (remaining >= val) {
+      remaining -= val;
+      state.vmfxx.lots.splice(i, 1);
+    } else {
+      // Keep the remainder, reset compounding from now
+      lot.startBalance = val - remaining;
+      lot.startTime = Date.now();
+      remaining = 0;
+    }
+  }
+  save();
+}
+
+// ─── CORS-safe Yahoo Finance fetch ───────────────────────────────────────────
+// Routes through our Cloudflare Worker proxy which adds Access-Control-Allow-Origin: *
+const PROXY = 'https://jadon-yahoo-proxy.drewecherd.workers.dev/';
+
+async function yahooFetch(yahooUrl) {
+  const proxyUrl = PROXY + '?url=' + encodeURIComponent(yahooUrl);
+  const res = await fetch(proxyUrl, {
+    headers: { Accept: 'application/json' },
+    signal: AbortSignal.timeout(10000),
+  });
+  if (!res.ok) throw new Error(`Proxy returned ${res.status}`);
+  return res.json();
+}
+
+// ─── VMFXX Yield Fetch ───────────────────────────────────────────────────────
+// Uses the NY Fed public API (full CORS support, no key needed).
+// VMFXX tracks the Effective Federal Funds Rate minus its 0.11% expense ratio.
+async function fetchVMFXXYield() {
+  if (Date.now() - state.vmfxx.yieldFetchedAt < ONE_DAY) {
+    updateYieldNote();
+    return;
+  }
+  try {
+    const res  = await fetch('https://markets.newyorkfed.org/api/rates/all/latest.json', {
+      headers: { Accept: 'application/json' },
+      signal: AbortSignal.timeout(8000),
+    });
+    const data = await res.json();
+    const effr = data.refRates?.find(r => r.type === 'EFFR');
+    const rate = effr?.percentRate;
+    if (rate && rate > 0) {
+      // VMFXX yield ≈ EFFR − 0.11% expense ratio
+      state.vmfxx.yield = (rate - 0.11) / 100;
+      state.vmfxx.yieldFetchedAt = Date.now();
+      save();
+    }
+  } catch(e) {
+    console.warn('NY Fed EFFR fetch failed, using cached/default yield', e);
+  }
+  updateYieldNote();
+}
+
+function updateYieldNote() {
+  const pct = (state.vmfxx.yield * 100).toFixed(2);
+  document.getElementById('yieldNote').textContent = `Current yield: ${pct}% / year`;
+}
+
+// ─── VOO Math ────────────────────────────────────────────────────────────────
+function vooShares()   { return state.voo.lots.reduce((s, l) => s + l.shares, 0); }
+function vooInvested() { return state.voo.lots.reduce((s, l) => s + l.shares * l.costPerShare, 0); }
+function vooTotal()    { return vooShares() * (state.voo.price?.regularMarketPrice ?? 0); }
+
+function buyVoo(dollars) {
+  const price = state.voo.price?.regularMarketPrice;
+  if (!price) return false;
+  state.voo.lots.push({ id: Date.now(), shares: dollars / price, costPerShare: price, purchaseDate: Date.now() });
+  save();
+  return true;
+}
+
+function sellVoo(dollars) {
+  const price = state.voo.price?.regularMarketPrice;
+  if (!price) return false;
+  let sharesToSell = Math.min(dollars / price, vooShares());
+  // FIFO — oldest lot first
+  let remaining = sharesToSell;
+  while (remaining > 1e-9 && state.voo.lots.length > 0) {
+    const lot = state.voo.lots[0];
+    if (remaining >= lot.shares) {
+      remaining -= lot.shares;
+      state.voo.lots.shift();
+    } else {
+      lot.shares -= remaining;
+      remaining = 0;
+    }
+  }
+  save();
+  return true;
+}
+
+// ─── VOO Price Fetch ─────────────────────────────────────────────────────────
+async function fetchVOOPrice() {
+  const cached  = state.voo.price;
+  const isManual = cached && cached.regularMarketPrice === cached.previousClose;
+  if (cached && !isManual && Date.now() - cached.timestamp < FIVE_MIN) { renderVOO(); return; }
+
+  try {
+    const data = await yahooFetch('https://query1.finance.yahoo.com/v8/finance/chart/VOO');
+    const meta = data.chart.result[0].meta;
+    state.voo.price = {
+      regularMarketPrice: meta.regularMarketPrice,
+      previousClose:      meta.previousClose ?? meta.chartPreviousClose,
+      timestamp:          Date.now()
+    };
+    save();
+  } catch(e) {
+    console.warn('VOO price fetch failed entirely', e);
+  }
+  renderVOO();
+}
+
+// ─── TJS Logic ───────────────────────────────────────────────────────────────
+async function fetchTJSRate() {
+  try {
+    const cached = state.tjs.rate;
+    if (cached && Date.now() - cached.timestamp < ONE_DAY) { renderTJS(); return; }
+
+    const urls = [
+      'https://open.er-api.com/v6/latest/USD',
+      `${PROXY}?url=${encodeURIComponent('https://open.er-api.com/v6/latest/USD')}`,
+    ];
+
+    for (const url of urls) {
+      try {
+        const res  = await fetch(url, { headers: { Accept: 'application/json' } });
+        if (!res.ok) continue;
+        const data = await res.json();
+        const current = data.rates?.TJS;
+        if (current) {
+          state.tjs.rate = {
+            current,
+            previous: cached?.current ?? current,
+            date:     data.time_last_update_utc,
+            timestamp: Date.now(),
+          };
+          save();
+          break;
+        }
+      } catch(e) {
+        console.warn('TJS rate fetch failed for', url, e.message);
+      }
+    }
+    renderTJS();
+  } catch(e) {
+    console.error('fetchTJSRate unexpected error:', e);
+  }
+}
+
+async function manualRefreshTJS() {
+  const btn = document.getElementById('tjsRefreshBtn');
+  btn.textContent = '↻ …';
+  btn.disabled = true;
+  if (state.tjs.rate) state.tjs.rate.timestamp = 0;
+  await fetchTJSRate();
+  btn.textContent = '↻ Refresh';
+  btn.disabled = false;
+}
+
+function tjsUsdValue(tjsAmount, rate) {
+  return rate ? tjsAmount / rate : 0;
+}
+
+function renderTJS() {
+  const { amount, rate } = state.tjs;
+  const hasAmount = amount > 0;
+  const currentRate = rate?.current;
+  const prevRate    = rate?.previous;
+
+  const usdNow  = tjsUsdValue(amount, currentRate);
+  const usdPrev = tjsUsdValue(amount, prevRate);
+  const change  = usdNow - usdPrev;
+
+  document.getElementById('tjsUsdValue').textContent = usd(usdNow);
+  document.getElementById('tjsAmount').textContent   = amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' TJS';
+  document.getElementById('tjsEmpty').style.display  = hasAmount ? 'none' : 'block';
+  document.getElementById('btnRemoveTjs').disabled   = amount <= 0;
+
+  if (currentRate) {
+    document.getElementById('tjsRate').textContent = currentRate.toFixed(4) + ' TJS';
+    const btn = `<button onclick="manualRefreshTJS()" id="tjsRefreshBtn" style="margin-left:6px; background:none; border:1px solid #dde3ea; color:#999; font-size:0.7rem; padding:2px 8px; border-radius:10px; font-weight:500; cursor:pointer;">↻ Refresh</button>`;
+    document.getElementById('tjsRateLine').innerHTML =
+      `1 USD = <strong>${currentRate.toFixed(4)} TJS</strong>` + btn;
+  } else {
+    document.getElementById('tjsRate').textContent = '—';
+  }
+
+  const changeEl = document.getElementById('tjsDailyChange');
+  changeEl.textContent = signed(change);
+  changeEl.className   = 'stat-value ' + (change >= 0 ? 'gain' : 'loss');
+}
+
+// ─── Formatting ──────────────────────────────────────────────────────────────
+const usd = n => '$' + Math.abs(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const signed = n => (n >= 0 ? '+' : '−') + usd(n);
+
+// ─── Render ──────────────────────────────────────────────────────────────────
+function renderVMFXX() {
+  const val      = vmfxxTotal();
+  const invested = vmfxxInvested();
+  const returns  = val - invested;
+  const hasLots  = state.vmfxx.lots.length > 0;
+
+  // Show 6 decimal places only when there's money invested (so ticking is visible)
+  if (hasLots) {
+    const dollars = Math.floor(val);
+    const micro   = (val - dollars).toFixed(6).slice(1); // ".000000"
+    document.getElementById('vmfxxValue').textContent = '$' + dollars.toLocaleString('en-US') + micro;
+  } else {
+    document.getElementById('vmfxxValue').textContent = '$0.00';
+  }
+  const perDay = val * (Math.pow(1 + ratePerSecond(state.vmfxx.yield), 86400) - 1);
+  document.getElementById('vmfxxPerSec').textContent   = hasLots ? `+$${perDay.toFixed(4)}/day` : '';
+  document.getElementById('vmfxxInvested').textContent = usd(invested);
+
+  const rEl = document.getElementById('vmfxxReturns');
+  rEl.textContent = signed(returns);
+  rEl.className   = 'stat-value ' + (returns >= 0 ? 'gain' : 'loss');
+
+  document.getElementById('vmfxxEmpty').style.display = hasLots ? 'none' : 'block';
+  document.getElementById('btnWithdraw').disabled = val <= 0;
+}
+
+function renderVOO() {
+  const val      = vooTotal();
+  const invested = vooInvested();
+  const returns  = val - invested;
+  const shares   = vooShares();
+  const hasLots  = state.voo.lots.length > 0;
+  const price    = state.voo.price;
+
+  document.getElementById('vooValue').textContent    = usd(val);
+  document.getElementById('vooShares').textContent   = shares.toFixed(4);
+  document.getElementById('vooInvested').textContent = usd(invested);
+
+  const rEl = document.getElementById('vooReturns');
+  rEl.textContent = signed(returns);
+  rEl.className   = 'stat-value ' + (returns >= 0 ? 'gain' : 'loss');
+
+  document.getElementById('vooEmpty').style.display = hasLots ? 'none' : 'block';
+  document.getElementById('btnSellVoo').disabled = val <= 0;
+
+  const priceNoteEl = document.getElementById('vooPriceNote');
+  if (price) {
+    const chg = price.regularMarketPrice - price.previousClose;
+    const pct = (chg / price.previousClose) * 100;
+    const sgn = chg >= 0 ? '+' : '';
+    const cls = chg >= 0 ? 'gain' : 'loss';
+    const btn = `<button onclick="manualRefreshVOO()" id="vooRefreshBtn" style="margin-left:6px; background:none; border:1px solid #dde3ea; color:#999; font-size:0.7rem; padding:2px 8px; border-radius:10px; font-weight:500; cursor:pointer;">↻ Refresh</button>`;
+    // Only show today's change if we have real previous close data (not a manual entry)
+    if (price.regularMarketPrice !== price.previousClose) {
+      document.getElementById('vooPriceChange').innerHTML =
+        `Price: <strong>$${price.regularMarketPrice.toFixed(2)}</strong> ` +
+        `<span class="${cls}">${sgn}${chg.toFixed(2)} (${sgn}${pct.toFixed(2)}%)</span> today` + btn;
+    } else {
+      document.getElementById('vooPriceChange').innerHTML =
+        `Price: <strong>$${price.regularMarketPrice.toFixed(2)}</strong> <span style="color:#aaa">(manual)</span>` + btn;
+    }
+    priceNoteEl.textContent = '';
+  } else {
+    const btn = `<button onclick="manualRefreshVOO()" id="vooRefreshBtn" style="margin-left:6px; background:none; border:1px solid #dde3ea; color:#999; font-size:0.7rem; padding:2px 8px; border-radius:10px; font-weight:500; cursor:pointer;">↻ Refresh</button>`;
+    document.getElementById('vooPriceChange').innerHTML = 'Price unavailable' + btn;
+    priceNoteEl.textContent = 'Live price failed — you can enter it manually when buying';
+    priceNoteEl.style.color = '#aaa';
+  }
+}
+
+function renderSummary() {
+  const tjsUsd   = tjsUsdValue(state.tjs.amount, state.tjs.rate?.current);
+  const totalVal = vmfxxTotal() + vooTotal() + tjsUsd;
+  const totalInv = vmfxxInvested() + vooInvested() + tjsUsd;
+  const totalRet = totalVal - totalInv;
+
+  document.getElementById('totalValue').textContent    = usd(totalVal);
+  document.getElementById('totalInvested').textContent = usd(totalInv);
+
+  const rEl = document.getElementById('totalReturns');
+  rEl.textContent = signed(totalRet);
+  rEl.className   = totalRet >= 0 ? 'gain' : 'loss';
+}
+
+function renderAll() { renderVMFXX(); renderVOO(); renderTJS(); renderSummary(); }
+
+// ─── Modal ───────────────────────────────────────────────────────────────────
+const MODALS = {
+  addVmfxx:      { title: '💰 Add to Safe Money',       desc: 'How much do you want to add?',               style: 'add'  },
+  withdrawVmfxx: { title: '💸 Withdraw Safe Money',     desc: 'How much do you want to withdraw?',          style: 'sell' },
+  buyVoo:        { title: '📈 Buy VOO Shares',          desc: 'How much do you want to invest in VOO?',     style: 'add'  },
+  sellVoo:       { title: '📉 Sell VOO',                desc: 'How much do you want to sell (in dollars)?', style: 'sell' },
+  addTjs:        { title: '💵 Add TJS Cash',            desc: 'How many Somoni are you adding?',            style: 'add'  },
+  removeTjs:     { title: '💸 Remove TJS Cash',         desc: 'How many Somoni are you removing?',          style: 'sell' },
+};
+
+function openModal(type) {
+  currentModal = type;
+  const cfg = MODALS[type];
+
+  document.getElementById('modalTitle').textContent = cfg.title;
+  document.getElementById('modalDesc').textContent  = cfg.desc;
+  document.getElementById('modalInput').value       = '';
+  document.getElementById('modalError').textContent = '';
+
+  const hintEl        = document.getElementById('modalHint');
+  const manualRow     = document.getElementById('manualPriceRow');
+  const amountLabel   = document.getElementById('amountLabel');
+  const manualInput   = document.getElementById('manualPriceInput');
+
+  // Reset manual price row
+  manualRow.style.display   = 'none';
+  manualInput.value         = '';
+  amountLabel.style.display = 'block';
+  amountLabel.textContent   = 'Amount to invest:';
+
+  if (type === 'buyVoo') {
+    manualRow.style.display = 'block';
+    if (state.voo.price) {
+      manualInput.value    = state.voo.price.regularMarketPrice.toFixed(2);
+      hintEl.textContent   = 'Live price loaded — edit if needed.';
+      hintEl.style.display = 'block';
+    } else {
+      hintEl.textContent   = "Couldn't load live price — enter it manually.";
+      hintEl.style.display = 'block';
+    }
+  } else if (type === 'withdrawVmfxx') {
+    hintEl.textContent   = `Available: ${usd(vmfxxTotal())}`;
+    hintEl.style.display = 'block';
+  } else if (type === 'sellVoo') {
+    hintEl.textContent   = `Available: ${usd(vooTotal())} (${vooShares().toFixed(4)} shares)`;
+    hintEl.style.display = 'block';
+  } else if (type === 'addTjs') {
+    hintEl.textContent   = state.tjs.rate ? `Current rate: 1 USD = ${state.tjs.rate.current.toFixed(4)} TJS` : 'Rate loading…';
+    hintEl.style.display = 'block';
+    document.getElementById('amountLabel').textContent = 'Amount to add (TJS):';
+  } else if (type === 'removeTjs') {
+    hintEl.textContent   = `Available: ${state.tjs.amount.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2})} TJS`;
+    hintEl.style.display = 'block';
+    document.getElementById('amountLabel').textContent = 'Amount to remove (TJS):';
+  } else {
+    hintEl.style.display = 'none';
+  }
+
+  const btn = document.getElementById('modalConfirm');
+  btn.className   = cfg.style === 'add' ? 'btn-confirm-add' : 'btn-confirm-sell';
+  btn.textContent = cfg.style === 'add' ? 'Add' : 'Confirm';
+
+  document.getElementById('modalOverlay').classList.add('open');
+  setTimeout(() => {
+    const firstInput = manualRow.style.display === 'block' ? manualInput : document.getElementById('modalInput');
+    firstInput.focus();
+  }, 120);
+}
+
+function closeModal() {
+  document.getElementById('modalOverlay').classList.remove('open');
+  currentModal = null;
+}
+
+function closeModalOnBg(e) {
+  if (e.target === document.getElementById('modalOverlay')) closeModal();
+}
+
+function confirmModal() {
+  const amount  = parseFloat(document.getElementById('modalInput').value);
+  const errorEl = document.getElementById('modalError');
+
+  if (!amount || amount <= 0) {
+    errorEl.textContent = 'Please enter an amount greater than $0';
+    return;
+  }
+
+  if (currentModal === 'addVmfxx') {
+    addVmfxx(amount);
+  } else if (currentModal === 'withdrawVmfxx') {
+    const max = vmfxxTotal();
+    if (amount > max + 0.001) { errorEl.textContent = `You only have ${usd(max)} available`; return; }
+    withdrawVmfxx(amount);
+  } else if (currentModal === 'buyVoo') {
+    const price = parseFloat(document.getElementById('manualPriceInput').value);
+    if (!price || price <= 0) { errorEl.textContent = 'Please enter the VOO share price'; return; }
+    // Update stored price so the card and sells use the same value
+    const prevClose = state.voo.price?.previousClose ?? price;
+    state.voo.price = { regularMarketPrice: price, previousClose: prevClose, timestamp: Date.now() };
+    save();
+    buyVoo(amount);
+  } else if (currentModal === 'sellVoo') {
+    const max = vooTotal();
+    if (amount > max + 0.001) { errorEl.textContent = `You only have ${usd(max)} available`; return; }
+    if (!state.voo.price)     { errorEl.textContent = 'Waiting for VOO price…'; return; }
+    sellVoo(amount);
+  } else if (currentModal === 'addTjs') {
+    state.tjs.amount += amount;
+    save();
+  } else if (currentModal === 'removeTjs') {
+    if (amount > state.tjs.amount + 0.001) { errorEl.textContent = `You only have ${state.tjs.amount.toFixed(2)} TJS`; return; }
+    state.tjs.amount = Math.max(0, state.tjs.amount - amount);
+    save();
+  }
+
+  closeModal();
+  renderAll();
+}
+
+document.getElementById('modalInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') confirmModal();
+});
+
+// ─── Manual VOO refresh ──────────────────────────────────────────────────────
+async function manualRefreshVOO() {
+  const btn = document.getElementById('vooRefreshBtn');
+  btn.textContent = '↻ …';
+  btn.disabled = true;
+  // Force re-fetch by clearing the cache timestamp
+  if (state.voo.price) state.voo.price.timestamp = 0;
+  await fetchVOOPrice();
+  btn.textContent = '↻ Refresh';
+  btn.disabled = false;
+}
+
+// ─── Reset ───────────────────────────────────────────────────────────────────
+function openReset()    { document.getElementById('resetOverlay').classList.add('open'); }
+function closeReset()   { document.getElementById('resetOverlay').classList.remove('open'); }
+function confirmReset() {
+  if (!currentUser) return;
+  localStorage.removeItem(userDataKey(currentUser));
+  state = defaultState();
+  closeReset();
+  renderAll();
+}
+
+// ─── Boot ────────────────────────────────────────────────────────────────────
+// Allow Enter key in add-user input
+document.getElementById('newUserInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') addUserFromInput();
+});
+
+const lastUser = localStorage.getItem(LAST_USER_KEY);
+if (lastUser && getUsers().includes(lastUser)) {
+  switchUser(lastUser);
+} else {
+  showUserScreen();
+}
+
+setInterval(renderAll, 1000);
+setInterval(fetchVOOPrice, FIVE_MIN);
+setInterval(fetchTJSRate, FIVE_MIN);
+
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') {
+    fetchVOOPrice();
+    fetchVMFXXYield();
+    fetchTJSRate();
+  }
+});
+</script>
+</body>
+</html>
