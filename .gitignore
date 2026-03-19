@@ -1,0 +1,5 @@
+# Wrangler CLI cache (not needed for deployed worker)
+proxy/.wrangler/
+
+# Dependencies
+node_modules/
