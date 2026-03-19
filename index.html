@@ -426,7 +426,7 @@
     <div class="card-header">
       <div>
         <div class="card-title">Cash Holdings</div>
-        <div class="card-subtitle tjs-color">TJS → USD</div>
+        <div class="card-subtitle tjs-color">USD + TJS</div>
       </div>
       <span class="card-badge badge-tjs">Currency 💵</span>
     </div>
@@ -435,6 +435,10 @@
     <div class="sub-line" id="tjsRateLine">Loading rate… <button onclick="manualRefreshTJS()" id="tjsRefreshBtn" style="margin-left:6px; background:none; border:1px solid #dde3ea; color:#999; font-size:0.7rem; padding:2px 8px; border-radius:10px; font-weight:500; cursor:pointer;">↻ Refresh</button></div>
 
     <div class="stats">
+      <div class="stat-row">
+        <span class="stat-label">USD Cash</span>
+        <span class="stat-value" id="tjsUsdCash">$0.00</span>
+      </div>
       <div class="stat-row">
         <span class="stat-label">TJS Held</span>
         <span class="stat-value" id="tjsAmount">0.00</span>
@@ -445,14 +449,16 @@
       </div>
       <hr class="divider">
       <div class="stat-row">
-        <span class="stat-label">Today's Change</span>
+        <span class="stat-label">TJS Rate Change</span>
         <span class="stat-value" id="tjsDailyChange">$0.00</span>
       </div>
     </div>
 
-    <div class="empty-state" id="tjsEmpty">Add TJS cash to get started!</div>
+    <div class="empty-state" id="tjsEmpty">Add USD or TJS cash to get started!</div>
 
     <div class="buttons">
+      <button class="btn-add"  onclick="openModal('addUsd')">+ Add USD</button>
+      <button class="btn-sell" onclick="openModal('removeUsd')" id="btnRemoveUsd" disabled>− Remove USD</button>
       <button class="btn-add"  onclick="openModal('addTjs')">+ Add TJS</button>
       <button class="btn-sell" onclick="openModal('removeTjs')" id="btnRemoveTjs" disabled>− Remove TJS</button>
     </div>
@@ -538,7 +544,7 @@ function defaultState() {
   return {
     vmfxx: { lots: [], yield: DEFAULT_YIELD, yieldFetchedAt: 0 },
     voo:   { lots: [], price: null },
-    tjs:   { amount: 0, rate: null },
+    tjs:   { amount: 0, usd: 0, rate: null },
   };
 }
 
@@ -791,19 +797,22 @@ function tjsUsdValue(tjsAmount, rate) {
 }
 
 function renderTJS() {
-  const { amount, rate } = state.tjs;
-  const hasAmount = amount > 0;
+  const { amount, usd: usdCash = 0, rate } = state.tjs;
   const currentRate = rate?.current;
   const prevRate    = rate?.previous;
 
-  const usdNow  = tjsUsdValue(amount, currentRate);
-  const usdPrev = tjsUsdValue(amount, prevRate);
-  const change  = usdNow - usdPrev;
+  const tjsUsdNow  = tjsUsdValue(amount, currentRate);
+  const tjsUsdPrev = tjsUsdValue(amount, prevRate);
+  const rateChange = tjsUsdNow - tjsUsdPrev;
+  const combined   = usdCash + tjsUsdNow;
+  const hasAny     = usdCash > 0 || amount > 0;
 
-  document.getElementById('tjsUsdValue').textContent = usd(usdNow);
-  document.getElementById('tjsAmount').textContent   = amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' TJS';
-  document.getElementById('tjsEmpty').style.display  = hasAmount ? 'none' : 'block';
-  document.getElementById('btnRemoveTjs').disabled   = amount <= 0;
+  document.getElementById('tjsUsdValue').textContent  = usd(combined);
+  document.getElementById('tjsUsdCash').textContent   = usd(usdCash);
+  document.getElementById('tjsAmount').textContent    = amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' TJS';
+  document.getElementById('tjsEmpty').style.display   = hasAny ? 'none' : 'block';
+  document.getElementById('btnRemoveUsd').disabled    = usdCash <= 0;
+  document.getElementById('btnRemoveTjs').disabled    = amount <= 0;
 
   if (currentRate) {
     document.getElementById('tjsRate').textContent = currentRate.toFixed(4) + ' TJS';
@@ -815,8 +824,8 @@ function renderTJS() {
   }
 
   const changeEl = document.getElementById('tjsDailyChange');
-  changeEl.textContent = signed(change);
-  changeEl.className   = 'stat-value ' + (change >= 0 ? 'gain' : 'loss');
+  changeEl.textContent = signed(rateChange);
+  changeEl.className   = 'stat-value ' + (rateChange >= 0 ? 'gain' : 'loss');
 }
 
 // ─── Formatting ──────────────────────────────────────────────────────────────
@@ -896,8 +905,9 @@ function renderVOO() {
 
 function renderSummary() {
   const tjsUsd   = tjsUsdValue(state.tjs.amount, state.tjs.rate?.current);
-  const totalVal = vmfxxTotal() + vooTotal() + tjsUsd;
-  const totalInv = vmfxxInvested() + vooInvested() + tjsUsd;
+  const cashUsd  = state.tjs.usd ?? 0;
+  const totalVal = vmfxxTotal() + vooTotal() + tjsUsd + cashUsd;
+  const totalInv = vmfxxInvested() + vooInvested() + tjsUsd + cashUsd;
   const totalRet = totalVal - totalInv;
 
   document.getElementById('totalValue').textContent    = usd(totalVal);
@@ -916,8 +926,10 @@ const MODALS = {
   withdrawVmfxx: { title: '💸 Withdraw Safe Money',     desc: 'How much do you want to withdraw?',          style: 'sell' },
   buyVoo:        { title: '📈 Buy VOO Shares',          desc: 'How much do you want to invest in VOO?',     style: 'add'  },
   sellVoo:       { title: '📉 Sell VOO',                desc: 'How much do you want to sell (in dollars)?', style: 'sell' },
-  addTjs:        { title: '💵 Add TJS Cash',            desc: 'How many Somoni are you adding?',            style: 'add'  },
-  removeTjs:     { title: '💸 Remove TJS Cash',         desc: 'How many Somoni are you removing?',          style: 'sell' },
+  addUsd:        { title: '💵 Add USD Cash',             desc: 'How much USD cash are you adding?',          style: 'add'  },
+  removeUsd:     { title: '💸 Remove USD Cash',          desc: 'How much USD cash are you removing?',        style: 'sell' },
+  addTjs:        { title: '💵 Add TJS Cash',             desc: 'How many Somoni are you adding?',            style: 'add'  },
+  removeTjs:     { title: '💸 Remove TJS Cash',          desc: 'How many Somoni are you removing?',          style: 'sell' },
 };
 
 function openModal(type) {
@@ -955,6 +967,11 @@ function openModal(type) {
     hintEl.style.display = 'block';
   } else if (type === 'sellVoo') {
     hintEl.textContent   = `Available: ${usd(vooTotal())} (${vooShares().toFixed(4)} shares)`;
+    hintEl.style.display = 'block';
+  } else if (type === 'addUsd') {
+    hintEl.style.display = 'none';
+  } else if (type === 'removeUsd') {
+    hintEl.textContent   = `Available: ${usd(state.tjs.usd ?? 0)}`;
     hintEl.style.display = 'block';
   } else if (type === 'addTjs') {
     hintEl.textContent   = state.tjs.rate ? `Current rate: 1 USD = ${state.tjs.rate.current.toFixed(4)} TJS` : 'Rate loading…';
@@ -1016,6 +1033,14 @@ function confirmModal() {
     if (amount > max + 0.001) { errorEl.textContent = `You only have ${usd(max)} available`; return; }
     if (!state.voo.price)     { errorEl.textContent = 'Waiting for VOO price…'; return; }
     sellVoo(amount);
+  } else if (currentModal === 'addUsd') {
+    state.tjs.usd = (state.tjs.usd ?? 0) + amount;
+    save();
+  } else if (currentModal === 'removeUsd') {
+    const avail = state.tjs.usd ?? 0;
+    if (amount > avail + 0.001) { errorEl.textContent = `You only have ${usd(avail)} available`; return; }
+    state.tjs.usd = Math.max(0, avail - amount);
+    save();
   } else if (currentModal === 'addTjs') {
     state.tjs.amount += amount;
     save();
