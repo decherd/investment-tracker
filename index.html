@@ -482,7 +482,7 @@
     </div>
     <div style="font-size:0.8rem; color:#888; margin-bottom:6px;" id="amountLabel">Amount to invest:</div>
     <div class="input-wrap">
-      <span>$</span>
+      <span id="modalSymbol">$</span>
       <input type="number" id="modalInput" placeholder="0.00" min="0.01" step="0.01">
     </div>
     <div class="error-msg" id="modalError"></div>
@@ -946,11 +946,15 @@ function openModal(type) {
   const amountLabel   = document.getElementById('amountLabel');
   const manualInput   = document.getElementById('manualPriceInput');
 
-  // Reset manual price row
+  // Reset manual price row and currency symbol
   manualRow.style.display   = 'none';
   manualInput.value         = '';
   amountLabel.style.display = 'block';
   amountLabel.textContent   = 'Amount to invest:';
+  const symbolEl = document.getElementById('modalSymbol');
+  symbolEl.textContent     = '$';
+  symbolEl.style.display   = '';
+  document.getElementById('modalInput').style.paddingLeft = '30px';
 
   if (type === 'buyVoo') {
     manualRow.style.display = 'block';
@@ -977,10 +981,14 @@ function openModal(type) {
     hintEl.textContent   = state.tjs.rate ? `Current rate: 1 USD = ${state.tjs.rate.current.toFixed(4)} TJS` : 'Rate loading…';
     hintEl.style.display = 'block';
     document.getElementById('amountLabel').textContent = 'Amount to add (TJS):';
+    symbolEl.style.display = 'none';
+    document.getElementById('modalInput').style.paddingLeft = '14px';
   } else if (type === 'removeTjs') {
     hintEl.textContent   = `Available: ${state.tjs.amount.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2})} TJS`;
     hintEl.style.display = 'block';
     document.getElementById('amountLabel').textContent = 'Amount to remove (TJS):';
+    symbolEl.style.display = 'none';
+    document.getElementById('modalInput').style.paddingLeft = '14px';
   } else {
     hintEl.style.display = 'none';
   }
